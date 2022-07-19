@@ -1,0 +1,736 @@
+---
+title: "Report"
+author: "500025673"
+subtitle: "Assignment 1"
+date: "University of Sydney | DATA2002 | 2021"
+output:
+  html_document:
+  #prettydoc::html_pretty:
+    fig_caption: yes
+    number_sections: yes
+    self_contained: yes
+    theme: journal
+    #https://www.datadreaming.org/post/r-markdown-theme-gallery/
+    #https://cran.r-project.org/web/packages/prettydoc/vignettes/tactile.html#themes-for-r-markdown
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+<br>
+
+We first load the relevant packages and read in the CSV file on which we will perform our analysis.
+
+```{r setup, include=TRUE, message = FALSE, echo=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(readr)
+library(ggplot2)
+library(tidyverse)
+library(janitor)
+library(kableExtra)
+library(gridExtra)
+library(gendercoder)
+
+```
+
+
+```{r}
+options(knitr.table.format = "html")
+```
+
+
+
+# Executive Summary
+
+The report will analyze the data from the survey of students studying data2x02 at the University of Sydney. The questions in the survey include a variety of topics that ranging from students' physical condition to mental information. When analyzing the data, we will first clean up the required data that we need and evaluate the effectiveness of each variable in the survey. Also, there may be biases in the survey data, and we will solve the possible biases
+
+## Data Source
+
+The data is collected in the class through survey
+
+The participant is the DATA2002 students in USYD
+
+## Complexity of Data & Classification of Variables：
+
+The sample size is 211 whihc means there are 211 responses of the survery
+
+There are 24 variables in total which are composed of 10 quantitative data and 14 qualitative data
+
+quantitative data(10):
+
+timestamp, covid_tests, height, math_ability, r_ability, stress_score, lonely_score, emails_nums, salary, exercise_hour
+
+qualitative data(14):
+
+living_arrangements, wednesday, in_aus, data2002, year, camera, vaccination, social_media, gender, steak_preference,
+dominant_hand, sign_off, unit, major
+
+## Discussion questions
+
+1. `r text_spec("Is this a random sample of DATA2X02 students?", background = "#12AD71", color = "white")` 
+
+    A random sample means that every individual in the population has the same chance to be selected. It is not the case for       this survey. Firstly, it is a post on the ED, and then it is only mentioned in the Canvas. Also, students are not forced to     complete the survey. Hence, not all students in DATA2002 will fill in. Moreover, students in online classes abroad will be     affected by VPN, which may be inconvenient to check the post usually which would probably miss the survey. Therefore, this     is not a random sample.
+
+2. `r text_spec("What are the potential biases? Which variables are most likely to be subjected to this bias?", background ="#12AD71", color = "white")`
+
+    Non-response bias: 
+    
+    Since this investigation is not mandatory, individuals may be unwilling to participate in the investigation or fill in the     real answer when the questions make them feel embarrassed. There are plenty of variables that are most likely to be            subjected to this bias, such as living arrangements and exercise hours. Those older students who still live with their         parents may be unwilling to fill in the truth because of their self-esteem.  Moreover, those students who did fewer            exercises may reject to answer the question. The problem will occur if participants are different from non-participants in     a significant manner.
+    
+    Voluntary Selection bias：
+    
+    This survey appears in Canvas and ED. Those students who are hard-working or active in ED are more likely to check the ED      and Canvas and participate in this survey. This would lead to the data in the survey not being random enough, which could      particularly be the case of the practice duration of each week. Those who do not like learning and rarely do practice may      pay little attention to ED and miss the survey. Then the data of practice duration in the survey will be generally high        because students who often study are more likely to complete this data.
+    
+    Measurement bias:
+   
+    Some students will fill in dishonest data in order to make their data appear socially desirable or gregarious in front of      teachers. This situation is most likely to occur in data such as exercise hours and height. Students may fill the exercise     hours longer to pretend working hard. Furthermore, those short individuals may answer themselves as taller instead of the      real height. Also, students may scribble answers for fun, resulting in inaccurate data.
+   
+   
+
+3. `r text_spec("Are there any questions that needed improvement to generate useful data?", background ="#12AD71", color = "white")`
+
+    In the case of gender, height, and social media. Filling in literary questions may cause spelling disagreement, case           differences, the same meaning but different words. Problems in the numerical questions, such as height, may lead to            inconsistent units and formats. It may be a solution by providing several fixed options or a list of options for               participants to choose for text problems. For example, gender issues can be selected in male, female and secret,  to avoid     spelling, formatting, and other errors. Furthermore, give a fixed unit or value range to the numerical problem, such as the     height in meters.
+
+
+# Initial Data Analysis (IDA)
+
+Reading the data:
+Preliminary cleaning of missing data by replacing space and 'n/a' with NA while loading the data.
+```{r include = F}
+data = read_csv("DATA2x02 survey (Responses) - Form responses 1.csv", na = c("","n/a"," "))
+data2 = read_csv("DATA2x02 survey (Responses) - Form responses 1.csv", na = c("","n/a"," "))
+```
+
+A quick glimpse of the dataset and change the name of each column to a suitable and concise name which could be convenient for calling the corresponding column name
+Each row represents the answers from each participant and each column represents the questions in the survey.
+
+```{r results = 'hide'}
+glimpse(data)
+glimpse(data2)
+```
+
+```{r results = 'hide'}
+colnames(data)
+```
+
+
+```{r}
+questions = colnames(data)
+concise_names = c("timestamp","covid_tests","living_arrangements","height","wednesday","in_aus","math_ability","r_ability","data2002","year","camera",
+                "vaccination","social_media", "gender","steak_preference","dominant_hand","stress_score","lonely_score","emails_nums","sign_off","salary","unit","major","exercise_hour")
+colnames(data) = concise_names
+```
+
+```{r}
+questions = colnames(data2)
+concise_names = c("timestamp","covid_tests","living_arrangements","height","wednesday","in_aus","math_ability","r_ability","data2002","year","camera",
+                "vaccination","social_media", "gender","steak_preference","dominant_hand","stress_score","lonely_score","emails_nums","sign_off","salary","unit","major","exercise_hour")
+colnames(data2) = concise_names
+```
+Through simple observation, we find that the units or formats of some variables in the data are not unified, resulting in data clutter. We will clean up the data that we are going to use later.
+
+```{r}
+math <- data2$math_ability
+max(math,na.rm=TRUE )
+mean(math,na.rm=TRUE)
+median(math,na.rm=TRUE)
+min(math,na.rm=TRUE)
+range(math,na.rm=TRUE)
+quantile(math,na.rm=TRUE)
+IQR(math,na.rm=TRUE)
+var(math,na.rm=TRUE)
+sd(math,na.rm=TRUE)
+boxplot(math)
+mathgg = data2 %>% 
+  select(math_ability) %>% 
+  filter(!is.na(math_ability))
+mathgg = as.data.frame(table(mathgg))
+p <- ggplot(mathgg,aes(x = mathgg, y = Freq))
+p+geom_histogram(stat = "identity", fill="cadetblue1",alpha=0.5)+
+  labs(x = "Math Score",y = "Frequency")
+```
+```{r}
+stress = data2 %>% 
+  select(stress_score) %>% 
+  filter(!is.na(stress_score))
+stress = as.data.frame(table(stress))
+st <- data2$stress_score
+max(st,na.rm=TRUE )
+mean(st,na.rm=TRUE)
+median(st,na.rm=TRUE)
+min(st,na.rm=TRUE)
+range(st,na.rm=TRUE)
+quantile(st,na.rm=TRUE)
+IQR(st,na.rm=TRUE)
+var(st,na.rm=TRUE)
+sd(st,na.rm=TRUE)
+boxplot(st)
+p <- ggplot(stress,aes(x = stress, y = Freq))
+p+geom_histogram(stat = "identity", fill="cadetblue1",alpha=0.5)+
+  labs(x = "Stress Score",y = "Frequency")
+```
+
+
+# Data cleaning
+
+## Covid Tests
+
+Since the data of covid test is used in our first research question and there is no strange value except NA, we clean up the null values in the covid_test column and use "covid" to store the cleaned value. Then, using the kable() to make the data frame appear.
+
+```{r results='hide'}
+covid = data %>% 
+  select(covid_tests) %>% 
+  filter(!is.na(covid_tests))
+covid = as.data.frame(table(covid))
+```
+
+```{r}
+covid%>%
+  kable(caption = "Table 1: COVID TESTS CLEAN") %>% 
+  kable_styling(bootstrap_options = "striped",latex_options = "striped", full_width = TRUE, position = "center")
+```
+## Gender
+Through the observation of the original data, we find that there are many expressions in the gender column, such as different cases, different spelling, and so on. In order to facilitate subsequent research, we first use the recode_gender function in the gendercoder package to unify their component forms, and then we remove the Na data by creating a "gender" variable to store the value in the gender_clean without NA.
+```{r results = 'hide'}
+data = data %>% 
+  mutate(gender_clean = gendercoder::recode_gender(gender))
+
+gender = data %>% 
+  select(gender_clean) %>% 
+  filter(!is.na(gender_clean))
+gender = as.data.frame(table(gender))
+data %>% tabyl(gender_clean)
+
+```
+
+
+## Living arrangements
+There are plenty of different living arrangements. They could be divided into two main categories which are "with parents" and "not with parents" based on whether students live with their parents or not. In order to make it clear and convenient to use in the research question, we assign one parent and with parents as "With parents" and assign the rest as "not wit parents". Furthermore, the null value will be cleaned when we use the data.
+```{r results = 'hide'}
+data %>% janitor::tabyl(living_arrangements)
+```
+```{r}
+data = data %>% 
+  mutate(
+    living_arrangements = case_when( 
+startsWith(living_arrangements, "A") ~ "not with parents",
+startsWith(living_arrangements, "College ") ~ "not with parents",
+living_arrangements=='homestay' ~ "not with parents",
+living_arrangements=='Share house' ~ "not with parents",
+living_arrangements=='With one parent' ~ "With parents",
+living_arrangements=='With partner' ~ "not with parents",
+living_arrangements=='with sister' ~ "not with parents",
+TRUE ~ living_arrangements
+))
+```
+
+## math 
+
+Since the evaluation score of mathematics is from 0 to 10, in order to easily distinguish the strength of mathematical ability, we decided to divide mathematical ability into two values for future research. Firstly, by calculating the average value of self-assessment mathematical ability, we roughly take the middle value of 6 as the boundary and define the self-assessment mathematical ability as less than or equal to 6 as 0 and greater than 6 as 1. The 0 and 1 defined here represent "low" and "high" of mathematical ability respectively.
+
+```{r}
+mean(data$math_ability,na.rm=TRUE)
+```
+
+```{r warning=FALSE}
+data = data %>% 
+  mutate(
+    math_ability = case_when(
+      math_ability <=6 ~ 0,
+      math_ability >6 ~ 1,
+      TRUE ~ math_ability
+    )
+  )
+```
+
+
+# Research Questions
+
+## Research quesrtion 1: Does the number of COVID tests follow a Poisson distribution?
+
+Firstly, data visualization is carried out to roughly observe whether the data meet the required distribution, so as to facilitate the following research question.
+
+```{r, warning=FALSE}
+# Histogram with density plot
+p <- ggplot(covid,aes(x = covid, y = Freq))
+p+geom_histogram(stat = "identity", fill="cadetblue1",alpha=0.5)+
+  labs(title = "Figure 1: COVID TESTS AND FREQUENCY",x = "COVID tests",y = "Frequency")
+```
+
+According to the graph visualization, there are ups and downs in the middle and back of the histogram, but the Poisson distribution gradually decreases from the highest point. The data may conform to the Poisson distribution but in a small probability.
+
+**Goodness of Fit Tests**
+
+**Hypothesis **
+
+Null hypothesis:$H_{0}:$ the data of the number of COVID tests come from a Poisson distribution 
+
+vs
+
+Alternative hypothesis:$H_{1}:$ the data of the number of COVID tests do not come from a Poisson distribution.
+
+
+**Assumptions **
+
+- The expected frequencies, $e_i=np_{i}\ge 5$
+
+- Observations are independent. Each student does the COVID test independently.
+
+
+```{r results = 'hide'}
+y = covid$Freq
+y
+x = 0:9
+n = sum(y) # total number of samples (sample size)
+k = length(y) # number of groups
+lam = sum(y * x)/n # estimate the lambda parameter
+p = dpois(x, lambda = lam) # obtain the p_i from the Poisson pmf
+p
+```
+
+```{r results = 'hide'}
+p[9] = 1 - sum(p[1:8]) 
+p
+```
+
+```{r results = 'hide'}
+ey = ey = n * p# calculate the expected frequencies
+```
+
+```{r results = 'hide'}
+ey >= 5 #check assumption e_i >= 5 not all satisfied
+```
+
+```{r results = 'hide'}
+frequency <- y
+count_tests <- x
+expected <-ey
+p_i <- p
+df <- data.frame(count_tests,frequency,p_i ,expected) 
+df
+```
+```{r}
+df%>%
+  kable(caption = "Table 2: The corresponding cell count, frequency, pi and expected cell count under the null hypothesis") %>% 
+  kable_styling(bootstrap_options = "striped",latex_options = "striped", full_width = TRUE, position = "center")
+```
+
+There are two problems occur through calculating the p_i from the Poisson pmf, which are the sum of the value of expected probability is not 1 and the assumption of each expected cell count should be greater than 5 is not satisfied.
+Only the first three expected values satisfy our assumption, which means we need to combine adjacent classes of the rest.
+```{r results = 'hide'}
+yr = c(y[1:3], sum(y[4:9]))
+```
+
+```{r results = 'hide'}
+yr >= 5#Assumption checked.
+```
+
+```{r results = 'hide'}
+(eyr = c(ey[1:3], sum(ey[4:9])))
+eyr >= 5
+(pr = c(p[1:3], sum(p[4:9])))
+```
+```{r results = 'hide'}
+
+count_tests <- c("0","1","2",">=3")
+expected <-eyr
+p_i <- pr
+new_df <- data.frame(count_tests,p_i ,expected) 
+new_df
+```
+```{r}
+new_df%>%
+  kable(caption = "Table 3:The adjusting corresponding cell count, pi and expected cell count under the null hypothesis") %>% 
+  kable_styling(bootstrap_options = "striped",latex_options = "striped", full_width = TRUE, position = "center")
+```
+Adjusting: we combine the last 7 categories to allocate the counts into 4 categories which are 0 test, 1 test, 2 tests, and 3 or more tests. Then, all the frequencies of each category are greater than 5 and we could meet the assumption.
+
+**Test statistic**
+
+$$\displaystyle{T=\sum_{i=1}^k \frac{(Y_i-n p_i)^2}{n p_i}}. Under H_0, T \sim \chi_{2}^2 approximately$$
+
+
+
+**Observed Test statistic**
+
+$$\displaystyle{t_0 =\sum_{i=1}^k \frac{(Y_i-n p_i)^2}{n p_i}} = 68.004. Under H_0, T \sim \chi_{2}^2 approximately$$
+```{r}
+kr = length(yr) # number of combined classes
+(t0 = sum((yr - eyr)^2/eyr)) # test statistic
+```
+
+**P-value**
+
+$$P(T \ge t_0) = P(\chi_{2}^2 \ge 68.004) < 0.05$$
+```{r}
+(pval = 1 - pchisq(t0, df = kr - 1 - 1)) # p-value
+```
+
+
+**Decision**
+
+At the 0.05 significance level, the P-value is smaller than 0.05. Hence, the data is not consistent with our null hypothesis. In this case, we can conclude that the data of the number of COVID tests do not come from a Poisson distribution.
+
+
+
+## Research Quesrtion 2: Is the stress score of these students will be affected by gender??
+
+No matter in which country, males and females have varying degrees of pressure. Many individuals generally believe that males have more pressure than women, because of the stereotype of society, males should have a greater sense of responsibility, have greater ability, and be the backbone of the family. With the progress of society and the rise of feminism, females also face many stereotypes and life pressure. According to an article (Gender and Stress, 2012), the stress of females is rising, even more than males. In the current fast-growing society, everyone has different pressures. However, in the school wherewith less social pressure, whether the stress between men and women is the same has aroused my interest.
+
+**Two-sample t-test**
+
+**Hypothesis**
+
+Null hypothesis:$H_0\colon\ \mu_x=\mu_y$
+
+vs
+
+Alternative hypothesis: $H_1\colon\ \mu_x>\mu_y$ or $\mu_x<\mu_y$ or $\mu_x\not =\mu_y$
+
+**Assumptions**
+
+- $X_1,...,X_{n_x}$ are iid $N(\mu_X,\sigma^2)$,$Y_1,...,Y_{n_y}$ are iid $N(\mu_Y,\sigma^2)$ and $X_i$'s are independent of $Y_i$'s
+
+Firstly, the data are cleaned by dividing the corresponding stress scores into males and females two categories. Since we did not have enough data to explain the relationship for the "non-binary" population, we decided to ignore this data point and ignore the Na value in those two columns of data.
+
+```{r}
+
+males = data %>% 
+  select(gender_clean,stress_score) %>% 
+  filter(
+    data$gender_clean != "NA",
+    data$gender_clean != "non-binary",
+    data$gender_clean == "male",
+    data$stress_score != "NA"
+    
+    )
+females = data %>% 
+  select(gender_clean,stress_score) %>% 
+  filter(
+    data$gender_clean != "NA",
+    data$gender_clean != "non-binary",
+    data$gender_clean == "female",
+    data$stress_score != "NA"
+    
+    )
+
+```
+
+```{r}
+dat = data.frame(
+  stress_point = c(males$stress_score, females$stress_score),
+  fm = c(rep("Males", 
+                 length(males$stress_score)),
+             rep("Females", 
+                 length(females$stress_score)))
+)
+sum = dat %>% 
+  group_by(fm) %>% 
+  summarise(Mean = mean(stress_point),
+            SD = sd(stress_point), 
+            n = n())
+sum%>%
+  kable(caption = "Table 4: Summary of stress score of both genders",digits = 2) %>% 
+  kable_styling(bootstrap_options = "striped",latex_options = "striped", full_width = TRUE, position = "center")
+```
+
+```{r}
+g <-  ggplot(dat, aes(x = fm, y = stress_point))  
+g+geom_boxplot() + 
+  geom_jitter(width=0.15, size = 2, colour = "firebrick2") +
+  theme_gray()+
+  theme_bw(base_size = 14)+
+  labs(title = "Figure 2: STRESS SCORE DISTRIBUTION IN GENDERS", x = "Gender",y = "Stress Score")
+
+
+```
+
+According to the table4 and figure2, the distribution of the two is relatively uniform and close to the normal distribution. Although there is a gap in the variance value, the gap is very small and can be ignored. Hence, we decide to do the two-sample t-test for the data. 
+
+```{r}
+t.test(males$stress_score, females$stress_score, alternative = "two.sided", var.equal = TRUE)
+```
+Based on the result of t.test:
+
+Test statistic: -2.201
+
+P-value:0.029
+
+mean of x:5.721
+
+mean of y:6.405
+
+
+degree of freedom and $s^2_p$:
+```{r }
+ms = length(males$stress_score)
+fs = length(females$stress_score)
+sd_ms = sd(males$stress_score)
+sd_fs = sd(females$stress_score)
+sP = sqrt(((ms - 1) * sd_ms^2 + (fs - 1) * sd_fs^2)/
+            (ms + fs - 2))
+mean_ms = mean(males$stress_score)
+mean_fs = mean(females$stress_score)
+deg_free = ms+fs-2
+t0 = (mean_ms - mean_fs)/(sP * sqrt(1/ms + 1/fs))
+
+sP
+deg_free
+
+```
+
+**Test statistic**
+$$T = \dfrac{{\bar X} - {\bar Y}}{S_p \sqrt{\frac{1}{n_1} + \frac{1}{n_2}}} where S^2_p = \dfrac{(n_x-1) S_{x}^2 + (n_y-1) S_{y}^2}{n_x+n_y-2}. UnderH_0,T \sim t_{n_x+n_y-2}$$
+**Observed Test statistic**
+$$t_0 = \dfrac{{\bar x} - {\bar y}}{s_p \sqrt{\frac{1}{n_1} + \frac{1}{n_2}}} = -2.201 where s^2_p = \dfrac{(n_x-1) s_{x}^2 + (n_y-1) s_{y}^2}{n_x+n_y-2} = 2.132. UnderH_0,T \sim t_{201}$$
+```{r}
+t0
+```
+**P-value**
+$2P(t_{201} \ge |-2.201|)$ = 0.029 < 0.05
+```{r}
+p_val = 2 * (1 - pt(abs(t0), deg_free))
+p_val
+```
+
+**Decision**
+
+At the 0.05 significance level, the P-value is smaller than 0.05.Hence, the data is not consistent with our null hypothesis. In this case, we can conclude that the average stress scores are different in genders. Furthermore, the average stress score of female students is higher than the male students based on this data which are 6.41 and 5.72 respectively.
+
+
+
+## Research Question 3: Is there a correlation between the gender and living with parents of these students?
+
+Due to social stereotypes, the time of independence for boys and girls may be different. In the options of some parents, boys may be more required to be independent as soon as possible, while girls are not averse to being independent later. According to this article(Heiser, C. 2015), more and more older women live with their parents. Therefore, I would like to research whether there is a correlation between whether living with parents and gender in these students.
+
+First, we make a comparison graph to visualize the relationship between the two categories of data. Due to the research is related to the relationship between living with parents and gender, we divide the living_arrangement into 2 categories which are with parents and not with parents. Also, the same reason for ignoring the "non-binary" data as the second research question is due to its is a small population. Furthermore, the NA value in the data will be ignored because it is the result that the participants did not answer, and it is impossible to draw a conclusion from the NA value
+
+```{r}
+graph= data %>%
+ filter(
+  data$gender_clean != "NA",
+  data$gender_clean != "non-binary",
+  data$living_arrangements != "NA")
+
+#constructing plot
+gg <- ggplot(graph,aes(x = living_arrangements, fill = gender_clean))
+gg+ geom_bar(position = "fill") + 
+  scale_fill_brewer(palette = "Set3") + 
+  theme(legend.position = "right")+
+  theme_bw(base_size = 10) +
+  labs (title = "Figure 3: LIVING ARRANGEMENT IN GENDERS",x = "Living arrangement", y = "Proportion of Students live arrangements based on Gender", fill = "Gender")  
+
+
+
+
+```
+
+According to the graph, there is a difference in the living arrangement between the genders. The proportion for males live with parents seems lower than does not live with parents and the proportion for females live with parents looks higher than does not live with parents. Hence, we decide to use a test for independence to prove whether there is a correlation.
+
+**Test for independence**
+
+**Hypothesis**
+
+Null hypothesis $H_0$: $H_0\colon\  p_{ij}=p_{i\bullet}p_{\bullet j}$, $i=1, 2,\ldots,r$, $j=1,2,\ldots,c$.
+The living arrangement of these students are independent of gender
+
+vs
+
+Alternative hypothesis $H_1$: Not all equalities hold. The living arrangement of these students are dependent on gender
+
+**Assumptions **
+
+- independent observations 
+
+- $e_{ij} = y_{i\bullet} y_{\bullet j}/n \ge 5$
+
+```{r results='hide'}
+y = as.data.frame(table(graph$living_arrangements,graph$gender_clean))
+y
+```
+```{r results='hide'}
+y.mat = xtabs(Freq ~ Var1 + Var2,y) 
+y.mat
+```
+Check assumption:
+```{r results='hide'}
+r=c=2
+yr = apply(y.mat, 1, sum)
+yc = apply(y.mat, 2, sum)
+yr.mat = matrix(yr, r, c, byrow = FALSE)
+yc.mat = matrix(yc, r, c, byrow = TRUE)
+ey.mat = yr.mat * yc.mat / sum(y.mat)
+all(ey.mat >= 5)
+```
+**Test statistic**
+
+$\displaystyle T = \sum_{i=1}^2\sum_{j=1}^2\frac{(Y_{ij}-e_{ij})^2}{e_{ij}}$. Under $H_0$,$T \sim \chi_{1}^2$ approx.
+
+**Observed test statistic**
+
+$$\displaystyle t_0 = \sum_{i=1}^2\sum_{j=1}^2\frac{(y_{ij}-y_{i\bullet}y_{\bullet j}/n)^2}{y_{i\bullet}y_{\bullet j}/n} = 4.387$$
+
+```{r}
+(t0 = sum((y.mat - ey.mat)^2 / ey.mat))
+```
+**P-value**
+$$P(T \ge t_0) = P(\chi_{1}^2 \ge 4.387) = 0.036 < 0.05$$
+
+```{r}
+(pval = pchisq(t0, 1, lower.tail = FALSE))
+```
+
+**Decision**
+
+At the 0.05 significance level, the P-value is smaller than 0.05. Hence, the data is not consistent with our null hypothesis. Hence, there is evidence to suggest that whether living with parents is dependent on gender.
+
+## Research Question 4: Is there a correlation between the math ability and dominant hand of these students?
+
+According to the article（Sala & Gobet, 2017), the relationship between dominant hands and mathematical ability is still controversial. Some researchers claim that left-handed people are gifted in math, while strong right-handed people perform worst in math tasks. Since I am right-handed but my mathematical ability is relatively high, I would be interested in whether there is a relationship between hands and mathematical ability in this sample.
+
+According to the previous data cleaning, we divide mathematical ability into 0 and 1, which represent "low" and "high" of mathematical ability respectively. In addition, we will ignore the data of Ambidextrous, because we explore the difference between left and right hands. Ambidextrous belong to both left and right hands, which will not affect the results. Moreover, we ignore the NA value in the two sets of data because we can't get any conclusion from it
+```{r}
+mh= data %>%
+ filter(
+  data$math_ability != "NA",
+  data$dominant_hand != "Ambidextrous",
+  data$dominant_hand != "NA")
+
+#constructing plot
+m <- ggplot(mh,aes(x = math_ability, fill = dominant_hand))
+m+ geom_bar(position = "fill") + 
+  scale_fill_brewer(palette = "Set1") + 
+  theme(legend.position = "right")+
+  theme_bw(base_size = 10) +
+  labs (title = "Figure 4: MATH ABILITY IN DOMINANT HAND",x = "Math Ability", y = "Proportion of the math ability based on dominant hand", fill = "Dominant Hand")  
+
+
+
+
+```
+
+Based on the graph, there is a difference in the math ability between the dominant hands. The proportion for higher math ability of left hand seems highr than the right hand. Hence, we decide to use a test for independence to prove whether there is a correlation.
+
+**Test for independence**
+
+**Hypothesis**
+
+Null hypothesis $H_0$: $H_0\colon\  p_{ij}=p_{i\bullet}p_{\bullet j}$, $i=1, 2,\ldots,r$, $j=1,2,\ldots,c$.
+The math ability of these students are independent of dominant hand
+
+vs
+
+Alternative hypothesis $H_1$: Not all equalities hold. The math ability of these students are dependent on dominant hand
+
+
+**Assumptions **
+
+- independent observations 
+
+- $e_{ij} = y_{i\bullet} y_{\bullet j}/n \ge 5$
+
+```{r results='hide'}
+y = as.data.frame(table(mh$math_ability,mh$dominant_hand))
+y
+```
+```{r results='hide'}
+y.mat = xtabs(Freq ~ Var1 + Var2,y) 
+y.mat
+```
+Check assumption:
+```{r results='hide'}
+r=c=2
+yr = apply(y.mat, 1, sum)
+yc = apply(y.mat, 2, sum)
+yr.mat = matrix(yr, r, c, byrow = FALSE)
+yc.mat = matrix(yc, r, c, byrow = TRUE)
+ey.mat = yr.mat * yc.mat / sum(y.mat)
+all(ey.mat >= 5)
+```
+**Test statistic**
+
+$\displaystyle T = \sum_{i=1}^2\sum_{j=1}^2\frac{(Y_{ij}-e_{ij})^2}{e_{ij}}$. Under $H_0$,$T \sim \chi_{1}^2$ approx.
+
+**Observed test statistic**
+
+$$\displaystyle t_0 = \sum_{i=1}^2\sum_{j=1}^2\frac{(y_{ij}-y_{i\bullet}y_{\bullet j}/n)^2}{y_{i\bullet}y_{\bullet j}/n} = 1.569$$
+
+```{r}
+(t0 = sum((y.mat - ey.mat)^2 / ey.mat))
+```
+**P-value**
+$$P(T \ge t_0) = P(\chi_{1}^2 \ge 1.569) = 0.210 > 0.05$$
+
+```{r}
+(pval = pchisq(t0, 1, lower.tail = FALSE))
+```
+
+**Decision**
+
+At the 0.05 significance level, the P-value is larger than 0.05.Hence, the data are consistent with our null hypothesis and we reject the alternative hypothesis. Therefore, we conclude that the math ability of these students are independent of dominant hand. 
+
+
+
+
+
+
+
+# Limitation
+
+1. This is an optional independent survey. As discussed previously, the data may be subjective and the correctness of the data and results cannot be guaranteed
+
+2. There are two types of research related to gender, but for those "non-binary" data cannot be appended to males or females samples due to we cannot identify genetically with their gender
+
+3. For cleaning the living arrangement, we assign those "with sister" and "homestay" to the category that do not live with parents even though the situations are similar. As long as they are apart from parents, it is more appropriate to assign them to "not with parents".
+
+4. When dealing with the data of mathematical ability, only divide all students into high and low categories according to the average, which will lead some students in 5 and 6 to fall into the low category instead of the medium category. However, our research problem is the relationship between the left and right hands and mathematical ability, the medium category is not useful. This classification accords with the requirements, which may not have a great impact on the results.
+
+5. This is not a random sample, which is hard to get a perfect normal distribution. Hence, if the graph is close to the normal distribution and the SD difference is tiny, it is still possible to so the two-sample t-test.
+
+
+# Conclusions
+
+The result of this report found that the data of the number of COVID tests do not come from a Poisson distribution; the average stress score is not consistent in genders; whether living with parents is not consistent with being independent of genders; he math ability of these students are independent of dominant hand. However, due to this data is not a random sample which may result in bias and influence the validity of the obtained researched results
+
+
+# References
+
+1. Gender and Stress. (2012). Retrieved from:  https://www.apa.org/news/press/releases/stress/2010/gender-stress
+
+2. Heiser, C. (2015). More Grown-Ass Women Are Living at Home with Their Parents Than Ever Before. Retrieved from: https://www.womenshealthmag.com/life/a19935297/living-with-parents/
+
+3. Sala, G & Gobet, F. (2017). Are left-handed people more gifted than others? Our study suggests it may hold true for maths. Retrieved from: https://theconversation.com/are-left-handed-people-more-gifted-than-others-our-study-suggests-it-may-hold-true-for-maths-79059
+
+4. Alboukadel K (2020). ggpubr: 'ggplot2' Based Publication Ready Plots. R package version 0.4.0. https://CRAN.R-project.org/package=ggpubr
+
+5. Beaudry J, Emily K, Felix T and Rhydwyn M (2020). gendercodeR: Recodes Sex/Gender Descriptions Into A Standard Set. R package version 0.0.0.9000. https://github.com/ropenscilabs/gendercoder
+
+6. Firke S (2020). janitor: Simple Tools for Examining and Cleaning Dirty Data. R package version 2.0.1. https://CRAN.R-project.org/package=janitor
+
+7. R Core Team (2020). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. https://www.R-project.org/.
+
+8. Wickham H et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686, doi: [10.21105/joss.01686](https://doi.org/10.21105/joss.01686)
+
+9. Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report Generation in R. R package version 1.29.
+
+10. Wickham H&Hester J. (2020). Hadley Wickham and Jim Hester (2020). readr: Read Rectangular Text Data. R package version 1.4.0. Retrieved from: https://CRAN.R-project.org/package=readr
+
+11. Hao Zhu (2021). kableExtra: Construct Complex Table with 'kable' and Pipe Syntax. R package version 1.3.4. Retrieved from: https://CRAN.R-project.org/package=kableExtra
+
+12. Baptiste Auguie (2017). gridExtra: Miscellaneous Functions for "Grid" Graphics. R package version 2.3. Retrieved from: https://CRAN.R-project.org/package=gridExtra
+
+13. Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report Generation in R. R package version1.28.
+
+```{r, include = FALSE}
+citation("readr")
+citation("ggplot2")
+citation("janitor")
+citation("tidyverse")
+citation("kableExtra")
+citation("gridExtra")
+citation("gendercoder")
+```
+
+
